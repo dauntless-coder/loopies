@@ -1,23 +1,67 @@
+import { useState } from "react";
+import toast from "react-hot-toast";
 import chatIcon from "../assets/chat.png";
+import { createRoomApi, joinChatApi } from "../services/RoomService";
 
 const JoinCreateChat = () => {
+  const [detail, setDetail] = useState({
+    roomId: "",
+    userName: "",
+  });
 
-
-  const[detail, setDetail] = useState({
-    roomId:"",
-    userName:"",
-
-  })
-
-  function handleFormInputChange(event){
+  function handleFormInputChange(event) {
     setDetail({
       ...detail,
       [event.target.name]: event.target.value,
-
-  })
+    });
   }
 
+function validateForm(){
+  if(detail.roomId=== ""|| detail.userName=== ""){
 
+    toast.error("Inavlid input!")
+    return false
+  }
+  return true
+
+}
+
+
+
+
+  function joinChat() {
+
+    if(validateForm()){
+      //jon chat
+    }
+    
+  }
+
+  async function createRoom() {
+  if (validateForm()) {
+    try {
+      const response = await createRoomApi(detail); // send whole object
+      console.log("Room created:", response);
+      toast.success("Room created successfully!");
+     //join the room
+     
+
+    
+      joinChat();
+    } catch (error) {
+      console.log(error)
+      if(error.status==400){
+        toast.error("Room already exists!")
+      }
+      else{
+        toast("Error in creating room!")
+
+      }
+      
+      
+    }
+  }
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-100 via-green-100 to-blue-100 font-mono">
@@ -38,34 +82,45 @@ const JoinCreateChat = () => {
             Your Name
           </label>
           <input
+            onChange={handleFormInputChange}
+            value={detail.userName}
             type="text"
             id="name"
-            className="w-full bg-pink-50 border-2 border-pink-200 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400 shadow-inner"
+            name="userName"
+            placeholder="Enter your name"
+            className="w-full bg-pink-50 border-2 border-pink-200 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-400 shadow-inner text-gray-800"
           />
         </div>
 
         {/* Room ID Input */}
         <div>
-          <label
-            htmlFor="room"
-            className="block font-medium mb-2 text-gray-700"
-          >
+          <label htmlFor="room" className="block font-medium mb-2 text-gray-700">
             Room ID / New Room ID
           </label>
           <input
+            onChange={handleFormInputChange}
+            value={detail.roomId}
             type="text"
             id="room"
-            className="w-full bg-green-50 border-2 border-green-200 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400 shadow-inner"
+            name="roomId"
+            placeholder="Enter room ID"
+            className="w-full bg-green-50 border-2 border-green-200 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400 shadow-inner text-gray-800 placeholder-gray-400"
           />
         </div>
 
         {/* Buttons */}
         <div className="flex justify-center gap-4 mt-4">
-          <button className="px-5 py-2 bg-blue-300 hover:bg-blue-400 text-white rounded-md border-2 border-blue-400 shadow-md font-semibold">
+          <button
+            onClick={joinChat}
+            className="px-5 py-2 bg-blue-300 hover:bg-blue-400 text-white rounded-md border-2 border-blue-400 shadow-md font-semibold"
+          >
             Join Room
           </button>
 
-          <button className="px-5 py-2 bg-orange-300 hover:bg-orange-400 text-white rounded-md border-2 border-orange-400 shadow-md font-semibold">
+          <button
+            onClick={createRoom}
+            className="px-5 py-2 bg-orange-300 hover:bg-orange-400 text-white rounded-md border-2 border-orange-400 shadow-md font-semibold"
+          >
             Create Room
           </button>
         </div>
