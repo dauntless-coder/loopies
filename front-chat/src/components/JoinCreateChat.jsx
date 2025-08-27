@@ -1,13 +1,22 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import toast from "react-hot-toast";
 import chatIcon from "../assets/chat.png";
 import { createRoomApi, joinChatApi } from "../services/RoomService";
-
+import useChatContext from "../context/ChatContext";
+import { useNavigate } from "react-router";
 const JoinCreateChat = () => {
   const [detail, setDetail] = useState({
     roomId: "",
     userName: "",
   });
+
+const { roomId, userName, setRoomId, setCurrentUser, setConnected } =
+    useChatContext();
+  const navigate = useNavigate();
+
+
+
+
 
   function handleFormInputChange(event) {
     setDetail({
@@ -29,25 +38,56 @@ function validateForm(){
 
 
 
-  function joinChat() {
+ async function joinChat() {
 
     if(validateForm()){
       //jon chat
+      try {
+        const room = await joinChatApi(detail.roomId);
+        toast.success("joined..");
+        setCurrentUser(detail.userName);
+        setRoomId(room.roomId);
+        setConnected(true);
+        navigate("/chat");
+      } catch (error) {
+        if (error.status == 400) {
+          toast.error(error.response.data);
+        } else {
+          toast.error("Error in joining room");
+        }
+        console.log(error);
+      }
+
+
+
+
+
     }
     
   }
 
   async function createRoom() {
   if (validateForm()) {
+
+  //create room
+    console.log(detail);
+      // call api to create room on backend
+
     try {
-      const response = await createRoomApi(detail); // send whole object
-      console.log("Room created:", response);
+      const response = await createRoomApi(detail.roomId); 
+      console.log(response);
       toast.success("Room created successfully!");
      //join the room
-     
+      setCurrentUser(detail.userName);
+        setRoomId(response.roomId);
+        setConnected(true);
+        navigate("/chat");
+
+
+// forward to chat page
 
     
-      joinChat();
+      
     } catch (error) {
       console.log(error)
       if(error.status==400){
