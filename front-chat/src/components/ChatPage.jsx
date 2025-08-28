@@ -183,10 +183,15 @@ const {
             >
               <div className="flex flex-row gap-2">
                 <img
-                  className="h-10 w-10"
-                  src={"https://avatar.iran.liara.run/public/43"}
-                  alt=""
-                />
+  className="h-10 w-10 rounded-full"
+  src={
+    message.sender === currentUser
+      ? "https://avatar.iran.liara.run/public/12" // your avatar
+      : "https://avatar.iran.liara.run/public/34" // others avatar
+  }
+  alt={message.sender}
+/>
+
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-bold">{message.sender}</p>
                   <p>{message.content}</p>

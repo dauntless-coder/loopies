@@ -20,7 +20,7 @@ public class ChatController {
 
 
     private RoomRepository roomRepository;
-    private Room room;
+
 
     public ChatController(RoomRepository roomRepository) {
         this.roomRepository = roomRepository;
@@ -39,26 +39,19 @@ public class ChatController {
             @RequestBody MessageRequest request
     )  {
 
-        roomRepository.findByRoomId(request.getRoomId());
-
+        Room room = roomRepository.findByRoomId(request.getRoomId());
         Message message = new Message();
         message.setContent(request.getContent());
         message.setSender(request.getSender());
         message.setTimeStamp(LocalDateTime.now());
-
-
-        if(room != null) {
+        if (room != null) {
             room.getMessages().add(message);
             roomRepository.save(room);
-
-
-        } else{
-            throw new RuntimeException("room not found!");
-
+        } else {
+            throw new RuntimeException("room not found !!");
         }
 
         return message;
-
 
 
     }
