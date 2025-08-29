@@ -1,6 +1,7 @@
 
 package com.loopies.chat.controllers;
 
+import com.loopies.chat.config.AppConstants;
 import com.loopies.chat.entities.Message;
 import com.loopies.chat.entities.Room;
 import com.loopies.chat.repositories.RoomRepository;
@@ -12,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/rooms")
-@CrossOrigin("http://localhost:5173")
+@CrossOrigin(AppConstants.FRONT_END_BASE_URL)
 public class RoomController {
     private final RoomRepository roomRepository;
 

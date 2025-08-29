@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  boot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: loopies-backend
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb+srv://devopify:devopify69@cluster.mongodb.net/loopies-chatapp?retryWrites=true&w=majority
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
