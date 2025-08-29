@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MdAttachFile, MdSend } from "react-icons/md";
 import useChatContext from "../context/ChatContext";
 import { useNavigate } from "react-router";
@@ -25,31 +25,28 @@ const ChatPage = () => {
     if (!connected) {
       navigate("/");
     }
-  }, [connected, roomId, currentUser]);
+  }, [connected, roomId, currentUser, navigate]);
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const inputRef = useRef(null);
   const chatBoxRef = useRef(null);
-  const fileInputRef = useRef(null);
   const [stompClient, setStompClient] = useState(null);
 
-  // Load past messages
+  // Load previous messages
   useEffect(() => {
     async function loadMessages() {
       try {
         const messages = await getMessagess(roomId);
         setMessages(messages);
-      } catch (error) {
-        console.error(error);
-      }
+      } catch (error) {}
     }
     if (connected) {
       loadMessages();
     }
-  }, []);
+  }, [connected, roomId]);
 
-  // Auto-scroll down on new message
+  // Auto-scroll
   useEffect(() => {
     if (chatBoxRef.current) {
       chatBoxRef.current.scroll({
@@ -59,7 +56,7 @@ const ChatPage = () => {
     }
   }, [messages]);
 
-  // WebSocket connect
+  // WebSocket setup
   useEffect(() => {
     const connectWebSocket = () => {
       const sock = new SockJS(`${baseURL}/chat`);
@@ -67,7 +64,7 @@ const ChatPage = () => {
 
       client.connect({}, () => {
         setStompClient(client);
-        toast.success("Connected");
+        toast.success("Connected to chat");
 
         client.subscribe(`/topic/room/${roomId}`, (message) => {
           const newMessage = JSON.parse(message.body);
@@ -79,10 +76,10 @@ const ChatPage = () => {
     if (connected) {
       connectWebSocket();
     }
-  }, [roomId]);
+  }, [connected, roomId]);
 
-  // Send text message
-  const sendMessage = () => {
+  // Send message
+  const sendMessage = async () => {
     if (stompClient && connected && input.trim()) {
       const message = {
         sender: currentUser,
@@ -95,45 +92,15 @@ const ChatPage = () => {
         {},
         JSON.stringify(message)
       );
-
       setInput("");
-    }
-  };
-
-  // Upload & send media
-  const handleUploadFile = async (file) => {
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch(`${baseURL}/api/chat/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const fileUrl = await res.text(); // backend should return URL string
-
-      const message = {
-        sender: currentUser,
-        content: fileUrl,
-        roomId: roomId,
-      };
-
-      stompClient.send(
-        `/app/sendMessage/${roomId}`,
-        {},
-        JSON.stringify(message)
-      );
-    } catch (err) {
-      console.error("Upload failed:", err);
-      toast.error("Upload failed");
     }
   };
 
   // Logout
   function handleLogout() {
-    stompClient.disconnect();
+    if (stompClient) {
+      stompClient.disconnect();
+    }
     setConnected(false);
     setRoomId("");
     setCurrentUser("");
@@ -141,124 +108,97 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-pink-100 via-green-100 to-blue-100 font-mono">
+    <div className="bg-gradient-to-b from-pink-50 to-blue-50 min-h-screen">
       {/* Header */}
-      <header className="fixed top-0 w-full bg-pink-200 border-b-4 border-pink-300 py-4 shadow-md flex justify-around items-center z-10">
-        <div>
-          <h1 className="text-lg font-bold text-pink-900">
-            Room: <span>{roomId}</span>
-          </h1>
-        </div>
-        <div>
-          <h1 className="text-lg font-bold text-pink-900">
-            User: <span>{currentUser}</span>
-          </h1>
-        </div>
-        <div>
-          <button
-            onClick={handleLogout}
-            className="bg-red-300 hover:bg-red-400 text-white px-4 py-2 rounded-md border-2 border-red-400 shadow-md"
-          >
-            Leave Room
-          </button>
-        </div>
+      <header className="fixed w-full bg-white border-b shadow-sm py-4 flex justify-between px-10 items-center">
+        <h1 className="text-lg font-semibold text-gray-800">
+          Room: <span className="text-blue-500">{roomId}</span>
+        </h1>
+        <h1 className="text-lg font-semibold text-gray-800">
+          User: <span className="text-pink-500">{currentUser}</span>
+        </h1>
+        <button
+          onClick={handleLogout}
+          className="bg-red-400 hover:bg-red-500 text-white px-4 py-2 rounded-full transition"
+        >
+          Leave Room
+        </button>
       </header>
 
-      {/* Chat Area */}
+      {/* Chat Box */}
       <main
         ref={chatBoxRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-100 mt-20 mb-20"
+        className="pt-20 pb-28 px-6 w-full sm:w-2/3 mx-auto h-screen overflow-auto"
       >
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`flex items-start gap-2 ${
-              message.sender === currentUser ? "justify-end" : "justify-start"
-            }`}
-          >
+        {messages.map((message, index) => {
+          const isSender = message.sender === currentUser;
+          return (
             <div
-              className={`my-2 ${
-                message.sender === currentUser ? "bg-green-800" : "bg-gray-800"
-              } p-2 max-w-xs rounded`}
+              key={index}
+              className={`flex my-3 ${
+                isSender ? "justify-end" : "justify-start"
+              }`}
             >
-              <div className="flex flex-row gap-2">
+              <div
+                className={`flex items-start gap-2 max-w-md ${
+                  isSender ? "flex-row-reverse text-right" : "flex-row"
+                }`}
+              >
+                {/* Avatar */}
                 <img
-                  className="h-10 w-10 rounded-full"
+                  className="h-10 w-10 rounded-full shadow-sm"
                   src={
-                    message.sender === currentUser
-                      ? "https://avatar.iran.liara.run/public/12"
-                      : "https://avatar.iran.liara.run/public/34"
+                    isSender
+                      ? "https://avatar.iran.liara.run/public/43" // sender avatar
+                      : "https://avatar.iran.liara.run/public/20" // receiver avatar
                   }
-                  alt={message.sender}
+                  alt="avatar"
                 />
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-bold">{message.sender}</p>
 
-                  {/* Render text / image / video */}
-                  {message.content.match(/\.(jpeg|jpg|png|gif)$/i) ? (
-                    <img
-                      src={message.content}
-                      alt="uploaded"
-                      className="max-w-[200px] rounded-md"
-                    />
-                  ) : message.content.match(/\.(mp4|webm|ogg)$/i) ? (
-                    <video
-                      controls
-                      className="max-w-[200px] rounded-md"
-                    >
-                      <source src={message.content} type="video/mp4" />
-                    </video>
-                  ) : (
-                    <p>{message.content}</p>
-                  )}
-
-                  <p className="text-xs text-gray-400">
+                {/* Message Bubble */}
+                <div
+                  className={`p-3 rounded-2xl shadow-sm ${
+                    isSender
+                      ? "bg-green-200 text-gray-800"
+                      : "bg-white border text-gray-800"
+                  }`}
+                >
+                  <p className="font-semibold text-sm text-gray-700">
+                    {message.sender}
+                  </p>
+                  <p className="text-base">{message.content}</p>
+                  <p className="text-xs text-gray-500 mt-1">
                     {timeAgo(message.timeStamp)}
                   </p>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </main>
 
-      {/* Input Area */}
-      <div className="fixed bottom-4 w-full h-16">
-        <div className="h-full pr-10 pl-4 gap-4 flex items-center justify-between rounded-md w-3/4 md:w-1/2 mx-auto bg-white border-4 border-pink-200 shadow-lg">
+      {/* Input Box */}
+      <div className="fixed bottom-4 w-full">
+        <div className="bg-white border shadow-md h-14 px-4 flex items-center gap-3 w-11/12 sm:w-2/3 mx-auto rounded-full">
           <input
-            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") sendMessage();
+            }}
             type="text"
             placeholder="Type your message..."
-            className="w-full bg-pink-50 border-2 border-pink-200 px-5 py-2 rounded-md focus:outline-none text-gray-800 shadow-inner font-medium"
+            className="w-full px-4 py-2 rounded-full focus:outline-none bg-gray-100"
           />
-
-          <div className="flex gap-1">
-            {/* Attach button */}
-            <button
-              onClick={() => fileInputRef.current.click()}
-              className="bg-purple-300 hover:bg-purple-400 text-white flex items-center justify-center h-10 w-10 rounded-md border-2 border-purple-400 shadow-md"
-            >
-              <MdAttachFile size={20} />
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*,video/*"
-              onChange={(e) => handleUploadFile(e.target.files[0])}
-            />
-
-            {/* Send button */}
-            <button
-              onClick={sendMessage}
-              className="bg-blue-300 hover:bg-blue-400 text-white flex items-center justify-center h-10 w-10 rounded-md border-2 border-blue-400 shadow-md"
-            >
-              <MdSend size={20} />
-            </button>
-          </div>
+          <button className="bg-purple-400 hover:bg-purple-500 text-white h-10 w-10 flex justify-center items-center rounded-full transition">
+            <MdAttachFile size={20} />
+          </button>
+          <button
+            onClick={sendMessage}
+            className="bg-green-400 hover:bg-green-500 text-white h-10 w-10 flex justify-center items-center rounded-full transition"
+          >
+            <MdSend size={20} />
+          </button>
         </div>
       </div>
     </div>
